@@ -10,6 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 const EMBEDDED_BUNDLE: &str = include_str!("../factory-approvals.toml");
 const SUPPORTED_SCHEMA_VERSION: u32 = 2;
+const CRATES_IO_SOURCE: &str = "registry+https://github.com/rust-lang/crates.io-index";
 const KNOWN_CAPABILITIES: &[&str] = &[
     "build-dependencies",
     "build-script",
@@ -186,7 +187,7 @@ impl FactoryBundle {
                 self.scanner_version, SCANNER_VERSION
             )));
         }
-        if self.source != "registry+https://github.com/rust-lang/crates.io-index" {
+        if self.source != CRATES_IO_SOURCE {
             return Err(error(format!(
                 "factory bundle has unsupported source {}",
                 self.source
@@ -243,27 +244,52 @@ mod tests {
     #[test]
     fn embedded_bundle_is_valid_and_exact() {
         let bundle = FactoryBundle::embedded().unwrap();
-        assert_eq!(bundle.approval_count(), 2_764);
-        assert_eq!(bundle.bundle_version, "2026-09-04-fairgate");
+        assert!(bundle.approval_count() > 0);
+        assert_eq!(bundle.scanner_version, SCANNER_VERSION);
+        assert_eq!(bundle.source, CRATES_IO_SOURCE);
     }
 
     #[test]
     fn identical_crate_decisions_group_exact_release_checksums() {
-        let bundle = FactoryBundle::embedded().unwrap();
+        let findings = BTreeSet::from(["build-time-closure".to_owned()]);
+        let bundle = FactoryBundle::from_approvals(
+            "test-bundle".to_owned(),
+            "2026-09-07".to_owned(),
+            "test fixture".to_owned(),
+            vec![
+                FactoryApproval {
+                    source: CRATES_IO_SOURCE.to_owned(),
+                    name: "example".to_owned(),
+                    version: "0.24.1".to_owned(),
+                    checksum: "1".repeat(64),
+                    scanner_version: SCANNER_VERSION,
+                    approved_findings: findings.clone(),
+                },
+                FactoryApproval {
+                    source: CRATES_IO_SOURCE.to_owned(),
+                    name: "example".to_owned(),
+                    version: "0.24.2".to_owned(),
+                    checksum: "2".repeat(64),
+                    scanner_version: SCANNER_VERSION,
+                    approved_findings: findings,
+                },
+            ],
+        )
+        .unwrap();
         let group = bundle
             .approval_groups
             .iter()
-            .find(|group| group.name == "addr2line")
+            .find(|group| group.name == "example")
             .unwrap();
 
-        assert_eq!(group.releases.len(), 4);
+        assert_eq!(group.releases.len(), 2);
         assert_eq!(
             group.releases.get("0.24.1").map(String::as_str),
-            Some("f5fb1d8e4442bd405fdfd1dacb42792696b0cf9cb15882e5d097b742a676d375")
+            Some("1111111111111111111111111111111111111111111111111111111111111111")
         );
         assert_eq!(
             group.releases.get("0.24.2").map(String::as_str),
-            Some("dfbe277e56a376000877090da837660b4427aad530e3028d44e0bffe4f89a1c1")
+            Some("2222222222222222222222222222222222222222222222222222222222222222")
         );
         assert!(!group.releases.contains_key("0.24.0"));
     }

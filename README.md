@@ -181,7 +181,7 @@ cargo dependency-audit trust-bundle show
 cargo dependency-audit trust-bundle install
 ```
 
-Installation requires a default-deny confirmation and imports only exact versions and checksums bound to the current scanner version. It does not authorize older versions by range. Future releases, checksum changes, yanked or excluded artifacts, and unlisted crates still require review. See [FAIRGATE-FACTORY-SCAN.md](FAIRGATE-FACTORY-SCAN.md) for provenance and exclusions.
+Installation requires a default-deny confirmation and imports only exact versions and checksums bound to the current scanner version. It does not authorize older versions by range. Future releases, checksum changes, yanked or excluded artifacts, and unlisted crates still require review. See [FACTORY-SCAN.md](FACTORY-SCAN.md) for the cumulative scan provenance and exclusions.
 
 To use an empty factory set, simply never install the bundle. Personal interactive approvals continue independently.
 

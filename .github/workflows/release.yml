@@ -102,6 +102,7 @@ jobs:
         run: |
           ${{ matrix.packages_install }}
       - name: Build archives
+        shell: bash
         run: |
           dist build "${{ needs.plan.outputs.tag-flag }}" --print=linkage \
             --output-format=json ${{ matrix.dist_args }} > dist-manifest.json

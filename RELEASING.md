@@ -93,6 +93,26 @@ Treat release-infrastructure changes as security-sensitive:
 
 `factory-approvals.toml` is embedded but inert until the user explicitly runs `cargo dependency-audit trust-bundle install`.
 
+Regenerate it from the widest source root containing the Cargo projects whose exact locked artifacts should be trusted:
+
+```sh
+./scripts/generate-factory-approvals.sh /path/to/source-root
+```
+
+Generation is cumulative by default. Existing exact identities are combined with the current lockfile inventory, checked again against the current RustSec database, checksum-verified, and rescanned before the output is replaced. This preserves previously reviewed coverage without preserving an identity that now fails validation.
+
+Transient registry failures are retried with bounded exponential backoff. If any archive still cannot be downloaded or strictly inspected, generation aborts before replacing the existing bundle or report. Resolve the failure and rerun; never publish a bundle made smaller by unavailable scan input.
+
+Each successful run appends its scope and exclusions to `FACTORY-SCAN.md`. Keep this cumulative history with the generated bundle; generation never truncates an earlier scan record.
+
+To deliberately discard all previous identities and rebuild only from current lockfiles, use the explicit destructive mode:
+
+```sh
+./scripts/generate-factory-approvals.sh --reset /path/to/source-root
+```
+
+Always review the resulting exact-identity diff. A large unexpected deletion should block the release.
+
 1. Use exact lockfile identities: source, name, version, and checksum.
 2. Run `cargo audit` with a fresh RustSec database and exclude vulnerable, unsound, unmaintained, and yanked releases.
 3. Run `examples/scan_factory_bundle.rs`; it verifies archives and uses the plugin's bounded memory-only scanner.

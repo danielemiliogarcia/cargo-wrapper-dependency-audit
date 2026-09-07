@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
-# Audits every lockfile under a source tree, then regenerates the exact factory bundle and report.
-# It reads the source tree only; generated files are written to this plugin repository.
+# Audits current lockfiles plus prior approvals, then regenerates the cumulative factory bundle.
+# Pass --reset to discard prior approvals; generated files are written to this repository.
 
 set -euo pipefail
 
+reset=false
+if [[ ${1:-} == "--reset" ]]; then
+    reset=true
+    shift
+fi
 if [[ $# -ne 1 ]]; then
-    printf 'usage: %s <source-root>\n' "$0" >&2
+    printf 'usage: %s [--reset] <source-root>\n' "$0" >&2
     exit 2
 fi
 
@@ -38,6 +43,20 @@ done < <(
         \( -type d \( -name .git -o -name target -o -name vendor \) -prune \) -o \
         \( -type f -name Cargo.lock -print0 \)
 )
+
+scan_options=()
+factory_bundle="$repository_root/factory-approvals.toml"
+if [[ $reset == false && -f "$factory_bundle" ]]; then
+    previous_lock="$work_dir/previous-factory-approvals.lock"
+    cargo run --release --locked --example scan_factory_bundle -- \
+        --write-bundle-lock "$factory_bundle" "$previous_lock"
+    lockfiles+=("$previous_lock")
+    scan_options+=(--existing-bundle "$factory_bundle")
+    printf 'Append mode: retaining and revalidating exact identities from %s\n' \
+        "$factory_bundle"
+else
+    printf 'Reset mode: generating only from current lockfile inventory\n'
+fi
 if [[ ${#lockfiles[@]} -eq 0 ]]; then
     printf 'error: no Cargo.lock files found beneath %s\n' "$source_root" >&2
     exit 1
@@ -79,12 +98,13 @@ LC_ALL=C sort -u -o "$blocklist" "$blocklist"
 
 cd "$repository_root"
 cargo run --release --locked --example scan_factory_bundle -- \
+    "${scan_options[@]}" \
     "$repository_root" \
     "$source_root" \
     "$blocklist" \
     factory-approvals.toml \
-    FAIRGATE-FACTORY-SCAN.md
+    FACTORY-SCAN.md
 
 printf 'Generated %s and %s\n' \
     "$repository_root/factory-approvals.toml" \
-    "$repository_root/FAIRGATE-FACTORY-SCAN.md"
+    "$repository_root/FACTORY-SCAN.md"

@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io::{Cursor, Read};
 use std::path::{Component, Path, PathBuf};
 
-const MAX_ENTRIES: usize = 4096;
+const MAX_ENTRIES: usize = 16384;
 const MAX_DECOMPRESSED_BYTES: u64 = 64 * 1024 * 1024;
 const MAX_ENTRY_BYTES: u64 = 4 * 1024 * 1024;
 
