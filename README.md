@@ -1,4 +1,7 @@
 <!-- User guide for installing and operating the standalone Dependency Audit plugin. -->
+
+# This plugin was replaced by [supply-chain-guard](https://github.com/danielemiliogarcia/cargo-wrapper-supply-chain-guard)
+
 # Cargo Wrapper Dependency Audit
 
 Dependency Audit is an optional middleware plugin for the [Cargo Wrapper](https://github.com/danielemiliogarcia/cargowrapper) project forked from [Original Cargo Wrapper](https://github.com/jonasmartin/cargowrapper).
